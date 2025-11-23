@@ -1,126 +1,86 @@
 <!-- src/routes/+page.svelte -->
-
 <script lang="ts">
-	import { apiKey } from '$lib/stores/status.cache';
-	import { ChatLLM } from '$lib/backend/llm_prompt';
-	import { moodPromptTemplate } from '$lib/data/llm_template/mood';
-	import { parseLLMJson } from '$lib/utils/llm/parser';
-	import Button from '$lib/UI/Button.svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
+  import { getWeekdayAndTime } from '$lib/utils/date_time'; // adjust path if needed
+  import { onMount } from 'svelte';
 
-	let userInput = '';
-	let response = '';
-	let loading = false;
-	let error = '';
-	let mood: string | null = null;
-	let showDebug = false;
+  // Reactive variables for user input
+  let year = 2025;
+  let month = 11;
+  let day = 23;
+  let hour = 14;
+  let minute = 30;
+  let second = 0;
+  let timezone = 'Asia/Taipei';
 
-	async function sendMessage() {
-		if (!userInput.trim()) return;
-		if (!$apiKey) {
-			error = 'Please set your API key first';
-			return;
-		}
+  let weekday = '';
+  let time = '';
 
-		loading = true;
-		error = '';
-		response = '';
-		mood = null;
+  function updateDateTime() {
+    try {
+      const result = getWeekdayAndTime(year, month, day, hour, minute, second, timezone);
+      weekday = result.weekday;
+      time = result.time;
+    } catch (err) {
+      weekday = 'Invalid input';
+      time = '--:--:--';
+    }
+  }
 
-		try {
-			response = await ChatLLM($apiKey, moodPromptTemplate, userInput);
-			const parsed = parseLLMJson(response);
-			mood = parsed.mood?.toLowerCase?.() ?? null;
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'An error occurred';
-		} finally {
-			loading = false;
-		}
-	}
-
-	function goToKeyPage() {
-		goto(resolve('/key'));
-	}
-
-	function getMoodEmoji(m: string) {
-		switch (m) {
-			case 'happy':
-				return '😄';
-			case 'sad':
-				return '😢';
-			case 'angry':
-				return '😠';
-			case 'soso':
-				return '😐';
-			default:
-				return '❓';
-		}
-	}
+  // Run once when component mounts
+  onMount(() => {
+    updateDateTime();
+  });
 </script>
 
-<div class="container mx-auto max-w-3xl p-8">
-	<h1 class="mb-8 text-3xl font-bold text-gray-900">🧠 Mood Analyzer</h1>
+<main>
+  <h1>Date & Time Converter</h1>
 
-	<div class="space-y-6">
-		<!-- Input Section -->
-		<div class="flex flex-col gap-3">
-			<textarea
-				name="message"
-				rows="6"
-				placeholder="Write your diary for today..."
-				bind:value={userInput}
-				class="w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-			></textarea>
+  <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 300px;">
+    <label>
+      Year: <input type="number" bind:value={year} on:input={updateDateTime} />
+    </label>
+    <label>
+      Month: <input type="number" min="1" max="12" bind:value={month} on:input={updateDateTime} />
+    </label>
+    <label>
+      Day: <input type="number" min="1" max="31" bind:value={day} on:input={updateDateTime} />
+    </label>
+    <label>
+      Hour: <input type="number" min="0" max="23" bind:value={hour} on:input={updateDateTime} />
+    </label>
+    <label>
+      Minute: <input type="number" min="0" max="59" bind:value={minute} on:input={updateDateTime} />
+    </label>
+    <label>
+      Second: <input type="number" min="0" max="59" bind:value={second} on:input={updateDateTime} />
+    </label>
+    <label>
+      Timezone: <input type="text" bind:value={timezone} on:input={updateDateTime} placeholder="e.g. Asia/Taipei" />
+    </label>
+  </div>
 
-			<div class="flex items-center gap-3">
-				<Button variant="primary" onclick={sendMessage} disabled={loading}>
-					{loading ? 'Analyzing...' : 'Analyze Mood'}
-				</Button>
+  <h2>Result</h2>
+  <p>
+    Weekday: <strong>{weekday}</strong><br>
+    Time: <strong>{time}</strong>
+  </p>
+</main>
 
-				<!-- Toggle Debug Button -->
-				<Button variant="secondary" onclick={() => (showDebug = !showDebug)}>
-					{showDebug ? 'Hide Debug' : 'Show Debug'}
-				</Button>
-			</div>
-		</div>
-
-		<!-- Error Message -->
-		{#if error}
-			<div class="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
-				<p class="font-medium text-red-800">Error: {error}</p>
-			</div>
-		{/if}
-
-		<!-- Mood Display -->
-		{#if mood}
-			<div class="flex items-center gap-4 rounded-lg border border-green-200 bg-green-50 p-6">
-				<span class="text-5xl">{getMoodEmoji(mood)}</span>
-				<div>
-					<h2 class="text-lg font-semibold text-gray-900 capitalize">Mood: {mood}</h2>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Loading State -->
-		{#if loading}
-			<div class="rounded-lg border border-gray-200 bg-gray-50 p-6">
-				<p class="animate-pulse text-gray-600">Analyzing your mood...</p>
-			</div>
-		{/if}
-
-		<div class="mb-6">
-			<Button variant="secondary" onclick={goToKeyPage}>Set API Key</Button>
-		</div>
-
-		<!-- Debug Info -->
-		{#if showDebug && response}
-			<div class="rounded-lg border border-blue-200 bg-blue-50 p-6">
-				<h2 class="mb-3 text-sm font-semibold tracking-wide text-blue-800 uppercase">
-					Raw Gemini Reply
-				</h2>
-				<p class="whitespace-pre-wrap text-gray-900">{response}</p>
-			</div>
-		{/if}
-	</div>
-</div>
+<style>
+  main {
+    font-family: system-ui, sans-serif;
+    padding: 2rem;
+  }
+  h1, h2 {
+    margin-bottom: 0.5rem;
+  }
+  input {
+    width: 100%;
+    padding: 0.25rem;
+  }
+  label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+</style>

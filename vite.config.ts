@@ -1,4 +1,5 @@
 // vite.config.ts
+import { projectBaseWithSlash } from "./myconfig.js";
 /// <reference types="vitest" />
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
@@ -17,8 +18,7 @@ export default defineConfig(({ mode }) => {
 	const isProduction = mode === 'production';
 
 	return {
-		// ✅ Critical: tells Vite to serve files under /demo/
-		base: isProduction ? '/demo/' : '/',
+		base: isProduction ? projectBaseWithSlash : '/',
 
 		plugins: [tailwindcss(), sveltekit()],
 

@@ -1,8 +1,8 @@
 // svelte.config.js
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { projectBase } from "./myconfig.js";
 
-/** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
 
@@ -15,9 +15,8 @@ const config = {
 			strict: true
 		}),
 
-		// ✅ Important: fix base path for GitHub Pages subdirectory
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '/demo' : ''
+			base: process.env.NODE_ENV === 'production' ? projectBase : ''
 		},
 
 		// optional, but ensures SvelteKit app files stay in a predictable dir
