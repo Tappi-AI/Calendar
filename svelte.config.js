@@ -1,7 +1,7 @@
 // svelte.config.js
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { projectBase } from "./myconfig.js";
+import { projectBase } from './myconfig.js';
 
 const config = {
 	preprocess: vitePreprocess(),

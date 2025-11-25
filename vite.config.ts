@@ -1,5 +1,5 @@
 // vite.config.ts
-import { projectBaseWithSlash } from "./myconfig.js";
+import { projectBaseWithSlash } from './myconfig.js';
 /// <reference types="vitest" />
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';

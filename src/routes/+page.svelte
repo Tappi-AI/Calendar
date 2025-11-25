@@ -1,139 +1,78 @@
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
   import { DateTime } from 'luxon';
-
-  import {
-    calendarStore,
-    setCurrentDate,
-    setLayout,
-    LAYOUTS
-  } from '$lib/stores/calendarStore';
-
+  import { calendarStore, setCurrentDate, setLayout, LAYOUTS } from '$lib/stores/calendarStore';
   import { monthGrid } from '$lib/stores/derivedCalendar';
+  import Meetings from '$lib/components/Meetings.svelte';
+  import { writable } from 'svelte/store';
 
-  // 🌟 SVELTE 5 LOCAL STATE
-  let selectedDate = $state(DateTime.now()); // default: today
+  // selectedDate controls the currently clicked day
+  let selectedDate = $calendarStore.currentDate; // default: today
 
-  // helper for comparing dates
   const isSameDate = (a: DateTime, b: DateTime) =>
     a.toISODate() === b.toISODate();
 </script>
 
 <!-- ===================== HEADER ===================== -->
-<div class="header">
-  <button onclick={() => setCurrentDate($calendarStore.currentDate.minus({ months: 1 }))}>
+<div class="flex items-center gap-4 p-3 border-b border-gray-200">
+  <button
+    class="px-2 py-1 rounded hover:bg-gray-100"
+    on:click={() => setCurrentDate($calendarStore.currentDate.minus({ months: 1 }))}>
     ‹
   </button>
 
-  <h2>{$calendarStore.currentDate.toFormat('MMMM yyyy')}</h2>
+  <h2 class="flex-grow text-lg font-semibold m-0">
+    {$calendarStore.currentDate.toFormat('MMMM yyyy')}
+  </h2>
 
-  <button onclick={() => setCurrentDate($calendarStore.currentDate.plus({ months: 1 }))}>
+  <button
+    class="px-2 py-1 rounded hover:bg-gray-100"
+    on:click={() => setCurrentDate($calendarStore.currentDate.plus({ months: 1 }))}>
     ›
   </button>
 
-  <button class="today-btn" onclick={() => {
-    const today = DateTime.now();
-    setCurrentDate(today);
-    selectedDate = today;
-  }}>
+  <button
+    class="ml-2 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+    on:click={() => {
+      const today = DateTime.now();
+      setCurrentDate(today);
+      selectedDate = today;
+    }}>
     Today
   </button>
 
-  <div class="layout-switch">
-    <button onclick={() => setLayout(LAYOUTS.MONTH)}>Month</button>
-    <button onclick={() => setLayout(LAYOUTS.WEEK)}>Week</button>
-    <button onclick={() => setLayout(LAYOUTS.DAY)}>Day</button>
+  <div class="ml-4 flex gap-1">
+    <button
+      class="px-2 py-1 rounded hover:bg-gray-100"
+      on:click={() => setLayout(LAYOUTS.MONTH)}>Month</button>
+    <button
+      class="px-2 py-1 rounded hover:bg-gray-100"
+      on:click={() => setLayout(LAYOUTS.WEEK)}>Week</button>
+    <button
+      class="px-2 py-1 rounded hover:bg-gray-100"
+      on:click={() => setLayout(LAYOUTS.DAY)}>Day</button>
   </div>
 </div>
 
 <!-- ===================== MONTH GRID ===================== -->
-<div class="month-grid">
-{#each $monthGrid as cell}
-  <div
-    class="
-      cell
-      {cell.inCurrentMonth ? '' : 'other-month'}
-      {cell.isToday ? 'today' : ''}
-      {isSameDate(cell.date, selectedDate) ? 'selected' : ''}
-    "
-    role="button"
-    tabindex="0"
-    onclick={() => selectedDate = cell.date}
-    onkeydown={(e) => e.key === 'Enter' && (selectedDate = cell.date)}
-  >
-    <span class="date">{cell.date.day}</span>
-  </div>
-{/each}
+<div class="grid grid-cols-7 grid-rows-6 h-[calc(100vh-80px)] border-t border-l border-gray-300">
+  {#each $monthGrid as cell}
+    <div
+      class={`relative border-r border-b border-gray-300 p-1 select-none cursor-pointer
+        ${cell.inCurrentMonth ? '' : 'bg-gray-50 text-gray-400'}
+        ${cell.isToday ? 'bg-blue-100 border-2 border-blue-500 z-10' : ''}
+        ${isSameDate(cell.date, selectedDate) ? 'outline-2 outline-blue-600 bg-blue-50 z-20' : ''}`}
+      role="button"
+      tabindex="0"
+      on:click={() => selectedDate = cell.date}
+      on:keydown={(e) => e.key === 'Enter' && (selectedDate = cell.date)}
+    >
+      <span class="absolute top-1 right-1 text-xs font-semibold">{cell.date.day}</span>
 
+      <!-- ===================== MEETINGS OVERLAY ===================== -->
+      {#if isSameDate(cell.date, selectedDate)}
+        <Meetings date={cell.date} />
+      {/if}
+    </div>
+  {/each}
 </div>
-
-<style>
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
-  }
-
-  .header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    flex-grow: 1;
-  }
-
-  .today-btn {
-    padding: 4px 10px;
-    border-radius: 4px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-  }
-
-  .layout-switch button {
-    margin-left: 4px;
-  }
-
-  .month-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    height: calc(100vh - 80px);
-    border-left: 1px solid #ddd;
-    border-top: 1px solid #ddd;
-  }
-
-  .cell {
-    border-right: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-    padding: 6px;
-    position: relative;
-    user-select: none;
-    cursor: pointer;
-  }
-
-  .other-month {
-    background: #fafafa;
-    color: #b3b3b3;
-  }
-
-  .today {
-    background: #eaf3ff;
-    border: 2px solid #4a8dff;
-    z-index: 2;
-  }
-
-  .selected {
-    outline: 3px solid #2563eb;
-    background: #e0edff;
-    z-index: 3;
-  }
-
-  .date {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-</style>

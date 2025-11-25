@@ -4,5 +4,5 @@ import { calendarStore } from './calendarStore';
 import { getMonthGrid, type MonthCell } from '$lib/utils/monthGrid';
 
 export const monthGrid = derived(calendarStore, ($store) => {
-  return getMonthGrid($store.currentDate);
+	return getMonthGrid($store.currentDate);
 });
